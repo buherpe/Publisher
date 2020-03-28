@@ -59,6 +59,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Tools\Tools\Tools.csproj">
+      <Project>{0be7b7de-c835-4d93-b856-0b9981d51c0c}</Project>
+      <Name>Tools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Publisher\Publisher.csproj">
       <Project>{9e9652ba-4bb7-4666-9495-fb48915d2133}</Project>
       <Name>Publisher</Name>

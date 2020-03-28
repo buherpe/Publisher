@@ -116,6 +116,12 @@
   <ItemGroup>
     <Resource Include="upload.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Tools\Tools\Tools.csproj">
+      <Project>{0be7b7de-c835-4d93-b856-0b9981d51c0c}</Project>
+      <Name>Tools</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
