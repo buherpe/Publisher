@@ -5,12 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Publisher"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance Type=local:MainWindow}"
-        Title="MainWindow" Height="450" Width="800">
+        d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
+        Title="{Binding AppNameWithVersion}"
+        Height="450" Width="800" 
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing" Loaded="Window_Loaded">
     <Grid>
-        <TextBox Height="23" Margin="10,10,10,0" TextWrapping="Wrap" Text="{Binding W.NugetPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top"/>
-        <TextBox Height="23" Margin="10,38,10,0" TextWrapping="Wrap" Text="{Binding W.SquirrelPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top"/>
-        <DataGrid ItemsSource="{Binding W.Projects, UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" Height="120" Margin="10,66,10,0" VerticalAlignment="Top">
+        <TextBox Height="23" Margin="10,10,10,0" TextWrapping="Wrap" Text="{Binding SaveThisClassPlease.NugetPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top"/>
+        <TextBox Height="23" Margin="10,38,10,0" TextWrapping="Wrap" Text="{Binding SaveThisClassPlease.SquirrelPath, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top"/>
+        <DataGrid ItemsSource="{Binding SaveThisClassPlease.Projects, UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" Height="120" Margin="10,66,10,0" VerticalAlignment="Top">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
                 <!--<DataGridTextColumn Header="CurrentVersion" Binding="{Binding CurrentVersion, UpdateSourceTrigger=PropertyChanged}"/>
@@ -22,6 +25,10 @@
         </DataGrid>
 
         <TextBlock TextWrapping="Wrap" Text="Icon made by Pixel perfect from www.flaticon.com" VerticalAlignment="Bottom" Foreground="#FF959595" TextAlignment="Right" Height="16"/>
-
+        <TextBlock x:Name="UpdateAvailableTextBlock" Height="16" VerticalAlignment="Bottom">           
+            <Hyperlink NavigateUri="http://www.google.com" RequestNavigate="UpdateAvailable_Click">
+                Доступно обновление
+            </Hyperlink>
+        </TextBlock>
     </Grid>
 </Window>

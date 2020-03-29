@@ -10,7 +10,7 @@ namespace Publisher
 
         public App()
         {
-            Helper.MagickInitMethod(/*$"http://buherpet.tk:9999/updates/{Helper.AppName}"*/);
+            Helper.MagickInitMethod($"http://buherpet.tk:9999/updates/{Helper.AppName}");
 
             Exit += App_Exit;
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;

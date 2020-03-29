@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Timers;
 using System.Windows;
+using System.Windows.Navigation;
 using System.Xml;
+using Newtonsoft.Json;
 using NLog;
 using Tools;
 
@@ -17,31 +22,108 @@ namespace Publisher
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        public Q W { get; set; } = new Q();
+        public MainViewModel MainViewModel { get; set; } = new MainViewModel();
+
+        public Timer SavingTimer = new Timer(5_000)
+        {
+            AutoReset = false,
+            Enabled = false,
+        };
 
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = this;
+            UpdateAvailableTextBlock.Visibility = Visibility.Collapsed;
+            DataContext = MainViewModel;
 
-            // \nuget pack GDTGen.nuspec -Version %(myAssemblyInfo.Version) -Properties Configuration=Release -OutputDirectory $(OutDir) -BasePath $(OutDir)
-            // \squirrel --releasify $(OutDir)GDTGen.$([System.Version]::Parse(%(myAssemblyInfo.Version)).ToString(3)).nupkg --no-msi --no-delta
+            Helper.AppUpdated += OnAppUpdated;
+            SavingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
-            //var pathToExe = @"C:\Users\buh\source\repos\buherpe\GameDevTycoon\GameDevTycoon\bin\Debug\GDTGen.exe";
-            //var versionInfo = FileVersionInfo.GetVersionInfo(pathToExe);
-            ////MessageBox.Show($"{versionInfo}");
+        }
 
-            //W.Projects.Add(new Project
-            //{
-            //    Name = versionInfo.ProductName,
-            //    CurrentVersion = versionInfo.FileVersion,
-            //    PathToExe = pathToExe
-            //});
+        private void OnAppUpdated()
+        {
+            Dispatcher.Invoke(() => UpdateAvailableTextBlock.Visibility = Visibility.Visible);
+        }
 
+        private void UpdateAvailable_Click(object sender, RequestNavigateEventArgs e)
+        {
+            Helper.RestartApp();
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (SavingTimer.Enabled)
+            {
+                SavingTimer.Enabled = false;
+                SaveSettings();
+            }
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            LoadSettings();
+        }
+
+        public void SaveSettings()
+        {
+            var settingsJson = JsonConvert.SerializeObject(MainViewModel.SaveThisClassPlease, Newtonsoft.Json.Formatting.Indented);
+            //Log.Info($"settingsJson: {settingsJson}");
+
+            Helper.CreateSettingsFolderIfNotExist();
+
+            File.WriteAllText(Helper.SettingsPath, settingsJson, Encoding.UTF8);
+        }
+
+        public void LoadSettings()
+        {
+            if (File.Exists(Helper.SettingsPath))
+            {
+                var settingsJson = File.ReadAllText(Helper.SettingsPath);
+                var settings = JsonConvert.DeserializeObject<SaveThisClassPlease>(settingsJson);
+                MainViewModel.SaveThisClassPlease = settings;
+                MainViewModel.SaveThisClassPlease.PropertyChanged += (sender, args) => RestartSavingTimer();
+                MainViewModel.SaveThisClassPlease.Projects.CollectionChanged += (sender, args) => RestartSavingTimer();
+            }
+            else
+            {
+                // first run
+                
+            }
+        }
+
+        public void RestartSavingTimer()
+        {
+            //Log.Info("Start");
+            SavingTimer.Stop();
+            SavingTimer.Start();
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            LoadSettings();
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveSettings();
         }
     }
 
-    public class Q : ObservableObject
+    public class MainViewModel : ObservableObject
+    {
+        public string AppNameWithVersion => Helper.AppNameWithVersion;
+
+        private SaveThisClassPlease _saveThisClassPlease;
+
+        public SaveThisClassPlease SaveThisClassPlease
+        {
+            get => _saveThisClassPlease;
+            set => OnPropertyChanged(ref _saveThisClassPlease, value);
+        }
+    }
+
+    public class SaveThisClassPlease : ObservableObject
     {
         private string _nugetPath = @"C:\Users\buh\.nuget\packages\nuget.commandline\5.3.1\tools\nuget";
 
@@ -153,7 +235,7 @@ namespace Publisher
             var doc = new XmlDocument();
             doc.Load(CsprojPath);
             var assemblyName = doc.GetElementsByTagName("AssemblyName").Cast<XmlNode>().Single().InnerText;
-            //Console.WriteLine($"assemblyName: {assemblyName}");
+            
             Name = assemblyName;
         }
 
@@ -163,7 +245,7 @@ namespace Publisher
             var assemblyInfo = File.ReadAllText(assemblyInfoPath, Encoding.UTF8);
             var rawVersion = Regex.Match(assemblyInfo, @"^\[assembly: AssemblyVersion\(""([0-9.]+)""\)\]", RegexOptions.Multiline).Groups.Cast<Group>().ElementAtOrDefault(1)?.Value;
             var version = System.Version.Parse(rawVersion).ToString(3);
-            //Console.WriteLine($"version: {version}");
+            
             Version = version;
         }
 
