@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -103,13 +104,13 @@ namespace Publisher
             set => OnPropertyChanged(ref _noMsi, value);
         }
 
-        private bool _noDelta = true;
+        //private bool _noDelta = true;
 
-        public bool NoDelta
-        {
-            get => _noDelta;
-            set => OnPropertyChanged(ref _noDelta, value);
-        }
+        //public bool NoDelta
+        //{
+        //    get => _noDelta;
+        //    set => OnPropertyChanged(ref _noDelta, value);
+        //}
 
         private string _outputDirectory;
 
@@ -133,6 +134,14 @@ namespace Publisher
         {
             get => _squirrelReleaseDir;
             set => OnPropertyChanged(ref _squirrelReleaseDir, value);
+        }
+
+        private string _uploadPath;
+
+        public string UploadPath
+        {
+            get => _uploadPath;
+            set => OnPropertyChanged(ref _uploadPath, value);
         }
 
         public delegate void OutputDataReceivedHandler(DataReceivedSource dataReceivedSource, DataReceivedType dataReceivedType, string data);
@@ -176,7 +185,7 @@ namespace Publisher
             };
         }
 
-        public void NugetPack(string nugetPath)
+        public bool NugetPack(string nugetPath)
         {
             var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(nugetPath, GetNugetPackCmd());
@@ -199,11 +208,18 @@ namespace Publisher
             Log.Info($"CancelOutputRead...");
             process.CancelOutputRead();
             Log.Info($"CancelOutputRead");
+
+            return process.ExitCode == 0;
+        }
+
+        public string GetNupkgFile()
+        {
+            return $"{Name}.{Version}.nupkg";
         }
 
         public string GetNupkgPath()
         {
-            return Path.Combine(OutputDirectory, $"{Name}.{Version}.nupkg");
+            return Path.Combine(OutputDirectory, GetNupkgFile());
         }
 
         public void DeleteDependenciesFromNuspec()
@@ -279,11 +295,11 @@ namespace Publisher
         public string GetSquirrelCmd()
         {
             var noMsi = NoMsi ? " --no-msi" : "";
-            var noDelta = NoDelta ? " --no-delta" : "";
-            return $@"--releasify {GetNupkgPath()}{noMsi}{noDelta} --releaseDir={SquirrelReleaseDir}";
+            //var noDelta = NoDelta ? " --no-delta" : "";
+            return $@"--releasify {GetNupkgPath()}{noMsi} --no-delta --releaseDir={SquirrelReleaseDir}";
         }
 
-        public void SquirrelReleasify(string squirrelPath)
+        public bool SquirrelReleasify(string squirrelPath)
         {
             var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(squirrelPath, GetSquirrelCmd());
@@ -310,37 +326,106 @@ namespace Publisher
             Log.Info($"CancelOutputRead...");
             process.CancelOutputRead();
             Log.Info($"CancelOutputRead");
+
+            return process.ExitCode == 0;
+        }
+
+        public void LeaveOneLineInReleasesFile()
+        {
+            // RELEASES вроде как нужен для дельта-пакетов
+            // но можно сломать обнову клиентам, если проетерять этот файл
+            // поэтому поддерживать дельту не буду
+            // просто в RELEASES оставляем одну строку с последней версией
+
+            var releaseFile = Path.Combine(SquirrelReleaseDir, "RELEASES");
+
+            var lines = File.ReadAllLines(releaseFile, Encoding.UTF8);
+
+            var lineWithCurrentVersion = lines.FirstOrDefault(x => x.Contains(Path.GetFileName(GetSquirrelReleaseNupkgPath())));
+
+            File.WriteAllText(releaseFile, lineWithCurrentVersion, Encoding.UTF8);
+        }
+
+        public string GetSquirrelReleaseNupkgPath()
+        {
+            return $"{Path.Combine(SquirrelReleaseDir, $"{Name}-{Version}-full.nupkg")}";
         }
 
         public void Upload()
         {
+            if (!Directory.Exists(UploadPath))
+            {
+                Directory.CreateDirectory(UploadPath);
+            }
 
+            var currentNuget = Path.GetFileName(GetSquirrelReleaseNupkgPath());
+
+            var filesToCopy = new List<string>();
+            filesToCopy.Add(currentNuget);
+            filesToCopy.Add("RELEASES");
+            filesToCopy.Add("Setup.exe");
+            if (!NoMsi)
+            {
+                filesToCopy.Add("Setup.msi");
+            }
+
+            var files = Directory.GetFiles(SquirrelReleaseDir).Where(x => filesToCopy.Contains(Path.GetFileName(x)));
+            foreach (var file in files)
+            {
+                var fileName = Path.GetFileName(file);
+                Log.Info($"{file}");
+
+                if (fileName == "Setup.exe" || fileName == "Setup.msi" || fileName == "RELEASES")
+                {
+                    File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)), true);
+                }
+                else if (fileName == currentNuget)
+                {
+                    File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)));
+                }
+            }
         }
 
         public void Publish(string nugetPath, string squirrelPath)
         {
-            NugetPack(nugetPath);
+            if (File.Exists(GetSquirrelReleaseNupkgPath()))
+            {
+                Log.Warn($"Версия {Version} уже релизнута");
+                return;
+            }
+
+            if (!NugetPack(nugetPath))
+            {
+                Log.Warn($"Ошибка NugetPack");
+            }
 
             if (IsDeleteDependenciesFromNuspecEnabled)
             {
                 DeleteDependenciesFromNuspec();
             }
 
-            SquirrelReleasify(squirrelPath);
+            if (!SquirrelReleasify(squirrelPath))
+            {
+                Log.Warn($"Ошибка SquirrelReleasify");
+            }
 
-            // todo upload...
+            LeaveOneLineInReleasesFile();
+
+            Upload();
         }
     }
 
     public enum DataReceivedType
     {
         Output,
+
         Error
     }
 
     public enum DataReceivedSource
     {
         NugetPack,
+
         Squirrel
     }
 }

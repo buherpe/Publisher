@@ -24,6 +24,7 @@ namespace Tests
             Project.CsprojPath = @"c:\Users\buh\source\repos\buherpe\Publisher\Publisher\Publisher.csproj";
             Project.OutputDirectory = @"K:\";
             Project.SquirrelReleaseDir = @"K:\SquirrelReleases\Publisher";
+            Project.UploadPath = @"K:\OSPanel\domains\buherpet.tk\updates\Publisher";
             Project.OutputDataReceived += (dataReceivedSource, dataReceivedType, data) => { Console.WriteLine($"[{dataReceivedSource}, {dataReceivedType}] {data}"); };
 
             Project.LoadName();
@@ -34,12 +35,6 @@ namespace Tests
         public void Test1()
         {
             Project.Publish(Q.NugetPath, Q.SquirrelPath);
-        }
-
-        [Test]
-        public void Test2()
-        {
-            
         }
     }
 }
