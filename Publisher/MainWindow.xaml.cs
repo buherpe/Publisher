@@ -397,6 +397,7 @@ namespace Publisher
             if (!NugetPack(nugetPath))
             {
                 Log.Warn($"Ошибка NugetPack");
+                return;
             }
 
             if (IsDeleteDependenciesFromNuspecEnabled)
@@ -407,6 +408,7 @@ namespace Publisher
             if (!SquirrelReleasify(squirrelPath))
             {
                 Log.Warn($"Ошибка SquirrelReleasify");
+                return;
             }
 
             LeaveOneLineInReleasesFile();
