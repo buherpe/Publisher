@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="Publisher.ProjectUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Publisher"
+             mc:Ignorable="d" 
+             d:DesignHeight="360" d:DesignWidth="733" d:DataContext="{d:DesignInstance local:Project}" DataContextChanged="UserControl_DataContextChanged">
+    <Grid>
+        <TextBlock Text="Name" HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <TextBlock Text="Version" HorizontalAlignment="Left" Margin="10,39,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding Version, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,38,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <TextBlock Text="Csproj path" HorizontalAlignment="Left" Margin="10,67,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding CsprojPath, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,66,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <CheckBox IsChecked="{Binding NoMsi, UpdateSourceTrigger=PropertyChanged}" Content="No Msi" HorizontalAlignment="Left" Margin="10,94,0,0" VerticalAlignment="Top"/>
+
+        <TextBlock Text="Output directory" HorizontalAlignment="Left" Margin="10,115,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,114,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <CheckBox IsChecked="{Binding IsDeleteDependenciesFromNuspecEnabled, UpdateSourceTrigger=PropertyChanged}" Content="Is delete dependencies from nuspec enabled?" HorizontalAlignment="Left" Margin="10,142,0,0" VerticalAlignment="Top"/>
+
+        <TextBlock Text="Squirrel release dir" HorizontalAlignment="Left" Margin="10,163,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding SquirrelReleaseDir, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,162,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <TextBlock Text="Upload path" HorizontalAlignment="Left" Margin="10,191,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding UploadPath, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,190,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <TextBlock Text="Nuget path" HorizontalAlignment="Left" Margin="10,247,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding NugetPath, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,246,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <TextBlock Text="Squirrel path" HorizontalAlignment="Left" Margin="10,219,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding SquirrelPath, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Height="23" Margin="113,218,0,0" TextWrapping="Wrap" VerticalAlignment="Top" MinWidth="120"/>
+
+        <Button Content="Load name" Click="LoadNameButton_Click" HorizontalAlignment="Left" Margin="10,286,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button Content="Load version" Click="LoadVersionButton_Click" HorizontalAlignment="Left" Margin="90,286,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button Content="Publish" Click="PublishButton_Click" HorizontalAlignment="Left" Margin="170,286,0,0" VerticalAlignment="Top" Width="75" FontSize="16" Height="45"/>
+        <Button Content="Nuget pack" Click="NugetPackButton_Click" HorizontalAlignment="Left" Margin="10,311,0,0" VerticalAlignment="Top" Width="75"/>
+        
+        <TextBox Margin="300,13,10,10" TextWrapping="Wrap" Text="{Binding Output, UpdateSourceTrigger=PropertyChanged}" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" IsReadOnly="True"/>
+    </Grid>
+</UserControl>
