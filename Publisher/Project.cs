@@ -214,8 +214,20 @@ namespace Publisher
             var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(NugetPath, GetNugetPackCmd());
             process.EnableRaisingEvents = true;
-            process.OutputDataReceived += (sender, args) => Output += $"[NugetPack, Output] {args.Data}\r\n";
-            process.ErrorDataReceived += (sender, args) => Output += $"[NugetPack, Error] {args.Data}\r\n";
+
+            process.OutputDataReceived += (sender, args) =>
+            {
+                var str = $"[NugetPack, Output] {args.Data}";
+                Log.Info(str);
+                Output += $"{str}\r\n";
+            };
+
+            process.ErrorDataReceived += (sender, args) =>
+            {
+                var str = $"[NugetPack, Error] {args.Data}";
+                Log.Info(str);
+                Output += $"str\r\n";
+            };
 
             Log.Info($"Process starting...");
             var start = process.Start();
@@ -355,8 +367,20 @@ namespace Publisher
             var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(SquirrelPath, GetSquirrelCmd());
             process.EnableRaisingEvents = true;
-            process.OutputDataReceived += (sender, args) => Output += $"[Squirrel, Output] {args.Data}\r\n";
-            process.ErrorDataReceived += (sender, args) => Output += $"[Squirrel, Error] {args.Data}\r\n";
+
+            process.OutputDataReceived += (sender, args) =>
+            {
+                var str = $"[Squirrel, Output] {args.Data}";
+                Log.Info(str);
+                Output += $"{str}\r\n";
+            };
+
+            process.ErrorDataReceived += (sender, args) =>
+            {
+                var str = $"[Squirrel, Error] {args.Data}";
+                Log.Info(str);
+                Output += $"str\r\n";
+            };
 
             Log.Info($"Process starting...");
             var start = process.Start();

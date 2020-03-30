@@ -76,6 +76,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DataReceivedSource.cs" />
+    <Compile Include="DataReceivedType.cs" />
+    <Compile Include="MainViewModel.cs" />
+    <Compile Include="PublishItemStatus.cs" />
+    <Compile Include="SaveThisClassPlease.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

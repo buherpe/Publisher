@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Timers;
 using System.Windows;
@@ -124,68 +120,5 @@ namespace Publisher
         {
             MainViewModel.SaveThisClassPlease.Projects.RemoveAt(MainViewModel.SaveThisClassPlease.SelectedProjectIndex);
         }
-    }
-
-    public class MainViewModel : ObservableObject
-    {
-        public string AppNameWithVersion => Helper.AppNameWithVersion;
-
-        private SaveThisClassPlease _saveThisClassPlease = new SaveThisClassPlease();
-
-        public SaveThisClassPlease SaveThisClassPlease
-        {
-            get => _saveThisClassPlease;
-            set => OnPropertyChanged(ref _saveThisClassPlease, value);
-        }
-    }
-
-    public class SaveThisClassPlease : ObservableObject
-    {
-        private TrulyObservableCollection<Project> _projects = new TrulyObservableCollection<Project>();
-
-        public TrulyObservableCollection<Project> Projects
-        {
-            get => _projects;
-            set => OnPropertyChanged(ref _projects, value);
-        }
-
-        private int _selectedProjectIndex;
-
-        public int SelectedProjectIndex
-        {
-            get => _selectedProjectIndex;
-            set => OnPropertyChanged(ref _selectedProjectIndex, value);
-        }
-    }
-
-    public enum PublishItemStatus
-    {
-        None,
-        InProgress,
-        Done,
-        Error,
-    }
-
-    public class ConsoleOutputItem
-    {
-        public DataReceivedSource DataReceivedSource { get; set; }
-
-        public DataReceivedType DataReceivedType { get; set; }
-
-        public string Data { get; set; }
-    }
-
-    public enum DataReceivedType
-    {
-        Output,
-
-        Error
-    }
-
-    public enum DataReceivedSource
-    {
-        NugetPack,
-
-        Squirrel
     }
 }
