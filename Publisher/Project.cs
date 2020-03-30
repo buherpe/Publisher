@@ -226,7 +226,7 @@ namespace Publisher
             {
                 var str = $"[NugetPack, Error] {args.Data}";
                 Log.Info(str);
-                Output += $"str\r\n";
+                Output += $"{str}\r\n";
             };
 
             Log.Info($"Process starting...");
@@ -379,7 +379,7 @@ namespace Publisher
             {
                 var str = $"[Squirrel, Error] {args.Data}";
                 Log.Info(str);
-                Output += $"str\r\n";
+                Output += $"{str}\r\n";
             };
 
             Log.Info($"Process starting...");
