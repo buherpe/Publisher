@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.ComponentModel;
+using System.Windows;
 
 namespace Publisher
 {
@@ -13,6 +14,9 @@ namespace Publisher
 
         private void UserControl_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+
             Project = (Project) DataContext;
         }
 

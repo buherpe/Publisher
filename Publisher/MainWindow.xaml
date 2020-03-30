@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
         Title="{Binding AppNameWithVersion}"
-        Height="479" Width="664" 
+        Height="548" Width="1059" 
         WindowStartupLocation="CenterScreen"
         Closing="Window_Closing" Loaded="Window_Loaded">
     <Grid>
@@ -20,7 +20,7 @@
 
         <TabControl ItemsSource="{Binding SaveThisClassPlease.Projects, UpdateSourceTrigger=PropertyChanged}" 
                     SelectedIndex="{Binding SaveThisClassPlease.SelectedProjectIndex, UpdateSourceTrigger=PropertyChanged}" 
-                    Margin="10,35,10,16" TabStripPlacement="Left">
+                    Margin="0,35,0,16" TabStripPlacement="Left">
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <TextBlock >

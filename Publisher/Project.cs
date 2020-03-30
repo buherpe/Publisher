@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Xml;
 using Newtonsoft.Json;
 using NLog;
@@ -116,6 +117,51 @@ namespace Publisher
             set => OnPropertyChanged(ref _output, value);
         }
 
+        private PublishItemStatus _nugetPackStatus;
+
+        [JsonIgnore]
+        public PublishItemStatus NugetPackStatus
+        {
+            get => _nugetPackStatus;
+            set => OnPropertyChanged(ref _nugetPackStatus, value);
+        }
+
+        private PublishItemStatus _deleteDependenciesFromNuspecStatus;
+
+        [JsonIgnore]
+        public PublishItemStatus DeleteDependenciesFromNuspecStatus
+        {
+            get => _deleteDependenciesFromNuspecStatus;
+            set => OnPropertyChanged(ref _deleteDependenciesFromNuspecStatus, value);
+        }
+
+        private PublishItemStatus _squirrelReleasifyStatus;
+
+        [JsonIgnore]
+        public PublishItemStatus SquirrelReleasifyStatus
+        {
+            get => _squirrelReleasifyStatus;
+            set => OnPropertyChanged(ref _squirrelReleasifyStatus, value);
+        }
+
+        private PublishItemStatus _leaveOneLineInReleasesFileStatus;
+
+        [JsonIgnore]
+        public PublishItemStatus LeaveOneLineInReleasesFileStatus
+        {
+            get => _leaveOneLineInReleasesFileStatus;
+            set => OnPropertyChanged(ref _leaveOneLineInReleasesFileStatus, value);
+        }
+
+        private PublishItemStatus _uploadStatus;
+
+        [JsonIgnore]
+        public PublishItemStatus UploadStatus
+        {
+            get => _uploadStatus;
+            set => OnPropertyChanged(ref _uploadStatus, value);
+        }
+
         //public delegate void OutputDataReceivedHandler(DataReceivedSource dataReceivedSource, DataReceivedType dataReceivedType, string data);
 
         //public event OutputDataReceivedHandler OutputDataReceived;
@@ -161,23 +207,13 @@ namespace Publisher
             };
         }
 
-        //[JsonIgnore]
-        //public Process NugetPackProcess { get; set; }
-
-        public bool NugetPack()
+        public async Task<bool> NugetPack()
         {
-            var process = new Process();
-            //NugetPackProcess = new Process();
-            //NugetPackProcess.Exited += (sender, args) =>
-            //{
-            //    Output += $"NugetPackProcess ExitCode: {process.ExitCode}\r\n";
-            //    //NugetPackProcess.Dispose();
-            //};
+            NugetPackStatus = PublishItemStatus.InProgress;
 
+            var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(NugetPath, GetNugetPackCmd());
             process.EnableRaisingEvents = true;
-            //process.OutputDataReceived += (sender, args) => OutputDataReceived?.Invoke(DataReceivedSource.NugetPack, DataReceivedType.Output, args.Data);
-            //process.ErrorDataReceived += (sender, args) => OutputDataReceived?.Invoke(DataReceivedSource.NugetPack, DataReceivedType.Error, args.Data);
             process.OutputDataReceived += (sender, args) => Output += $"[NugetPack, Output] {args.Data}\r\n";
             process.ErrorDataReceived += (sender, args) => Output += $"[NugetPack, Error] {args.Data}\r\n";
 
@@ -194,7 +230,7 @@ namespace Publisher
             Log.Info($"BeginErrorReadLine");
 
             Log.Info($"WaitForExit...");
-            process.WaitForExit();
+            await process.WaitForExitAsync();
             Log.Info($"WaitForExit. ExitCode: {process.ExitCode}");
 
             Log.Info($"CancelOutputRead...");
@@ -205,7 +241,11 @@ namespace Publisher
             process.CancelErrorRead();
             Log.Info($"CancelErrorRead");
 
-            return process.ExitCode == 0;
+            var success = process.ExitCode == 0;
+
+            NugetPackStatus = success ? PublishItemStatus.Done : PublishItemStatus.Error;
+
+            return success;
         }
 
         public string GetNupkgFile()
@@ -221,70 +261,83 @@ namespace Publisher
         public void DeleteDependenciesFromNuspec()
         {
             Log.Info($"Start");
-            var tempPath = Path.GetTempPath();
-            Log.Info($"tempPath: {tempPath}");
 
-            var tempDir = Path.Combine(tempPath, "PublisherTemp");
-            Log.Info($"tempDir: {tempDir}");
+            DeleteDependenciesFromNuspecStatus = PublishItemStatus.InProgress;
 
-            var nuspecFile = $"{Name}.nuspec";
-            Log.Info($"nuspecFile: {nuspecFile}");
-
-            var nuspecTempFile = Path.Combine(tempDir, nuspecFile);
-            Log.Info($"nuspecTempFile: {nuspecTempFile}");
-
-            if (!Directory.Exists(tempDir))
+            try
             {
-                Log.Info($"tempDir не существует, создаем папку");
-                Directory.CreateDirectory(tempDir);
-            }
+                var tempPath = Path.GetTempPath();
+                Log.Info($"tempPath: {tempPath}");
 
-            if (File.Exists(nuspecTempFile))
-            {
-                Log.Info($"nuspecTempFile существует, удаляем файл");
-                File.Delete(nuspecTempFile);
-            }
+                var tempDir = Path.Combine(tempPath, "PublisherTemp");
+                Log.Info($"tempDir: {tempDir}");
 
-            using (var zip = ZipFile.Open(GetNupkgPath(), ZipArchiveMode.Update))
-            {
-                Log.Info($"Открыли архив");
-                var nuspec = zip.GetEntry(nuspecFile);
+                var nuspecFile = $"{Name}.nuspec";
+                Log.Info($"nuspecFile: {nuspecFile}");
 
-                var rawNuspecXml = "";
+                var nuspecTempFile = Path.Combine(tempDir, nuspecFile);
+                Log.Info($"nuspecTempFile: {nuspecTempFile}");
 
-                using (var stream = nuspec.Open())
-                using (var reader = new StreamReader(stream))
+                if (!Directory.Exists(tempDir))
                 {
-                    rawNuspecXml = reader.ReadToEnd();
+                    Log.Info($"tempDir не существует, создаем папку");
+                    Directory.CreateDirectory(tempDir);
                 }
 
-                Log.Info($"rawNuspecXml: {rawNuspecXml}");
-
-                var nuspecXml = Regex.Replace(rawNuspecXml, "^((?!<!--).)*(<dependency .*)$", m => $"<!-- {m.Groups.Cast<Group>().ElementAtOrDefault(2).Value.Trim()} -->", RegexOptions.Multiline);
-                Log.Info($"nuspecXml: {nuspecXml}");
-
-                var sameNuspecXml = rawNuspecXml == nuspecXml;
-                Log.Info($"sameNuspecXml: {sameNuspecXml}");
-
-                if (!sameNuspecXml)
+                if (File.Exists(nuspecTempFile))
                 {
-                    Log.Info($"Сохраняем темповый файл...");
-                    File.WriteAllText(nuspecTempFile, nuspecXml, Encoding.UTF8);
-
-                    Log.Info($"Удаляем *.nuspec из архива");
-                    nuspec.Delete();
-
-                    Log.Info($"Добавляем в архив темповый nuspec-файл");
-                    zip.CreateEntryFromFile(nuspecTempFile, Path.GetFileName(nuspecTempFile));
+                    Log.Info($"nuspecTempFile существует, удаляем файл");
+                    File.Delete(nuspecTempFile);
                 }
 
-                Log.Info($"Закрываем архив");
-            }
+                using (var zip = ZipFile.Open(GetNupkgPath(), ZipArchiveMode.Update))
+                {
+                    Log.Info($"Открыли архив");
+                    var nuspec = zip.GetEntry(nuspecFile);
 
-            if (File.Exists(nuspecTempFile))
+                    var rawNuspecXml = "";
+
+                    using (var stream = nuspec.Open())
+                    using (var reader = new StreamReader(stream))
+                    {
+                        rawNuspecXml = reader.ReadToEnd();
+                    }
+
+                    Log.Info($"rawNuspecXml: {rawNuspecXml}");
+
+                    var nuspecXml = Regex.Replace(rawNuspecXml, "^((?!<!--).)*(<dependency .*)$", m => $"<!-- {m.Groups.Cast<Group>().ElementAtOrDefault(2).Value.Trim()} -->", RegexOptions.Multiline);
+                    Log.Info($"nuspecXml: {nuspecXml}");
+
+                    var sameNuspecXml = rawNuspecXml == nuspecXml;
+                    Log.Info($"sameNuspecXml: {sameNuspecXml}");
+
+                    if (!sameNuspecXml)
+                    {
+                        Log.Info($"Сохраняем темповый файл...");
+                        File.WriteAllText(nuspecTempFile, nuspecXml, Encoding.UTF8);
+
+                        Log.Info($"Удаляем *.nuspec из архива");
+                        nuspec.Delete();
+
+                        Log.Info($"Добавляем в архив темповый nuspec-файл");
+                        zip.CreateEntryFromFile(nuspecTempFile, Path.GetFileName(nuspecTempFile));
+                    }
+
+                    Log.Info($"Закрываем архив");
+                }
+
+                if (File.Exists(nuspecTempFile))
+                {
+                    Log.Info($"nuspecTempFile существует, удаляем файл");
+                    File.Delete(nuspecTempFile);
+                }
+
+                DeleteDependenciesFromNuspecStatus = PublishItemStatus.Done;
+            }
+            catch (Exception e)
             {
-                Log.Info($"nuspecTempFile существует, удаляем файл");
-                File.Delete(nuspecTempFile);
+                Log.Error(e);
+                DeleteDependenciesFromNuspecStatus = PublishItemStatus.Error;
             }
         }
 
@@ -295,13 +348,13 @@ namespace Publisher
             return $@"--releasify {GetNupkgPath()}{noMsi} --no-delta --releaseDir={SquirrelReleaseDir}";
         }
 
-        public bool SquirrelReleasify()
+        public async Task<bool> SquirrelReleasify()
         {
+            SquirrelReleasifyStatus = PublishItemStatus.InProgress;
+
             var process = new Process();
             process.StartInfo = GetDefaultProcessStartInfo(SquirrelPath, GetSquirrelCmd());
             process.EnableRaisingEvents = true;
-            //process.OutputDataReceived += (sender, args) => OutputDataReceived?.Invoke(DataReceivedSource.Squirrel, DataReceivedType.Output, args.Data);
-            //process.ErrorDataReceived += (sender, args) => OutputDataReceived?.Invoke(DataReceivedSource.Squirrel, DataReceivedType.Error, args.Data);
             process.OutputDataReceived += (sender, args) => Output += $"[Squirrel, Output] {args.Data}\r\n";
             process.ErrorDataReceived += (sender, args) => Output += $"[Squirrel, Error] {args.Data}\r\n";
 
@@ -318,7 +371,7 @@ namespace Publisher
             Log.Info($"BeginErrorReadLine");
 
             Log.Info($"WaitForExit...");
-            process.WaitForExit();
+            await process.WaitForExitAsync();
             Log.Info($"WaitForExit. ExitCode: {process.ExitCode}");
 
             Log.Info($"CancelOutputRead...");
@@ -329,7 +382,11 @@ namespace Publisher
             process.CancelErrorRead();
             Log.Info($"CancelErrorRead");
 
-            return process.ExitCode == 0;
+            var success = process.ExitCode == 0;
+
+            SquirrelReleasifyStatus = success ? PublishItemStatus.Done : PublishItemStatus.Error;
+
+            return success;
         }
 
         public void LeaveOneLineInReleasesFile()
@@ -339,13 +396,25 @@ namespace Publisher
             // поэтому поддерживать дельту не буду
             // просто в RELEASES оставляем одну строку с последней версией
 
-            var releaseFile = Path.Combine(SquirrelReleaseDir, "RELEASES");
+            try
+            {
+                LeaveOneLineInReleasesFileStatus = PublishItemStatus.InProgress;
 
-            var lines = File.ReadAllLines(releaseFile, Encoding.UTF8);
+                var releaseFile = Path.Combine(SquirrelReleaseDir, "RELEASES");
 
-            var lineWithCurrentVersion = lines.FirstOrDefault(x => x.Contains(Path.GetFileName(GetSquirrelReleaseNupkgPath())));
+                var lines = File.ReadAllLines(releaseFile, Encoding.UTF8);
 
-            File.WriteAllText(releaseFile, lineWithCurrentVersion, Encoding.UTF8);
+                var lineWithCurrentVersion = lines.FirstOrDefault(x => x.Contains(Path.GetFileName(GetSquirrelReleaseNupkgPath())));
+
+                File.WriteAllText(releaseFile, lineWithCurrentVersion, Encoding.UTF8);
+
+                LeaveOneLineInReleasesFileStatus = PublishItemStatus.Done;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+                LeaveOneLineInReleasesFileStatus = PublishItemStatus.Error;
+            }
         }
 
         public string GetSquirrelReleaseNupkgPath()
@@ -355,40 +424,52 @@ namespace Publisher
 
         public void Upload()
         {
-            if (!Directory.Exists(UploadPath))
+            try
             {
-                Directory.CreateDirectory(UploadPath);
-            }
+                UploadStatus = PublishItemStatus.InProgress;
 
-            var currentNuget = Path.GetFileName(GetSquirrelReleaseNupkgPath());
-
-            var filesToCopy = new List<string>();
-            filesToCopy.Add(currentNuget);
-            filesToCopy.Add("RELEASES");
-            filesToCopy.Add("Setup.exe");
-            if (!NoMsi)
-            {
-                filesToCopy.Add("Setup.msi");
-            }
-
-            var files = Directory.GetFiles(SquirrelReleaseDir).Where(x => filesToCopy.Contains(Path.GetFileName(x)));
-            foreach (var file in files)
-            {
-                var fileName = Path.GetFileName(file);
-                Log.Info($"{file}");
-
-                if (fileName == "Setup.exe" || fileName == "Setup.msi" || fileName == "RELEASES")
+                if (!Directory.Exists(UploadPath))
                 {
-                    File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)), true);
+                    Directory.CreateDirectory(UploadPath);
                 }
-                else if (fileName == currentNuget)
+
+                var currentNuget = Path.GetFileName(GetSquirrelReleaseNupkgPath());
+
+                var filesToCopy = new List<string>();
+                filesToCopy.Add(currentNuget);
+                filesToCopy.Add("RELEASES");
+                filesToCopy.Add("Setup.exe");
+                if (!NoMsi)
                 {
-                    File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)));
+                    filesToCopy.Add("Setup.msi");
                 }
+
+                var files = Directory.GetFiles(SquirrelReleaseDir).Where(x => filesToCopy.Contains(Path.GetFileName(x)));
+                foreach (var file in files)
+                {
+                    var fileName = Path.GetFileName(file);
+                    Log.Info($"{file}");
+
+                    if (fileName == "Setup.exe" || fileName == "Setup.msi" || fileName == "RELEASES")
+                    {
+                        File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)), true);
+                    }
+                    else if (fileName == currentNuget)
+                    {
+                        File.Copy(file, Path.Combine(UploadPath, Path.GetFileName(file)));
+                    }
+                }
+
+                UploadStatus = PublishItemStatus.Done;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+                UploadStatus = PublishItemStatus.Error;
             }
         }
 
-        public void Publish()
+        public async void Publish()
         {
             if (File.Exists(GetSquirrelReleaseNupkgPath()))
             {
@@ -396,7 +477,7 @@ namespace Publisher
                 return;
             }
 
-            if (!NugetPack())
+            if (!await NugetPack())
             {
                 Log.Warn($"Ошибка NugetPack");
                 return;
@@ -407,7 +488,7 @@ namespace Publisher
                 DeleteDependenciesFromNuspec();
             }
 
-            if (!SquirrelReleasify())
+            if (!await SquirrelReleasify())
             {
                 Log.Warn($"Ошибка SquirrelReleasify");
                 return;
