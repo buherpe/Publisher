@@ -471,6 +471,12 @@ namespace Publisher
 
         public async void Publish()
         {
+            NugetPackStatus = PublishItemStatus.None;
+            DeleteDependenciesFromNuspecStatus = PublishItemStatus.None;
+            SquirrelReleasifyStatus = PublishItemStatus.None;
+            LeaveOneLineInReleasesFileStatus = PublishItemStatus.None;
+            UploadStatus = PublishItemStatus.None;
+
             if (File.Exists(GetSquirrelReleaseNupkgPath()))
             {
                 Log.Warn($"Версия {Version} уже релизнута");
