@@ -32,7 +32,6 @@ namespace Publisher
 
             Helper.AppUpdated += OnAppUpdated;
             SavingTimer.Elapsed += (s, e) => { SaveSettings(); };
-
         }
 
         private void OnAppUpdated()
@@ -82,16 +81,16 @@ namespace Publisher
                     project.LoadName();
                     project.LoadVersion();
                 }
-
-                MainViewModel.SaveThisClassPlease.PropertyChanged += (sender, args) => RestartSavingTimer();
-                MainViewModel.SaveThisClassPlease.Projects.CollectionChanged += (sender, args) => RestartSavingTimer();
-                MainViewModel.SaveThisClassPlease.Projects.CollectionItemChanged += (sender, args) => RestartSavingTimer();
             }
             else
             {
                 // first run
-                
+
             }
+
+            MainViewModel.SaveThisClassPlease.PropertyChanged += (sender, args) => RestartSavingTimer();
+            MainViewModel.SaveThisClassPlease.Projects.CollectionChanged += (sender, args) => RestartSavingTimer();
+            MainViewModel.SaveThisClassPlease.Projects.CollectionItemChanged += (sender, args) => RestartSavingTimer();
         }
 
         public void RestartSavingTimer()
